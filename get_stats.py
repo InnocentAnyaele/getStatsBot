@@ -141,7 +141,7 @@ def getStatsFromApi(league, season):
 
 
 def send_reply(tweet_text, tweet_id):
-    failed_reply_text = "Your request could not be completed. \n Format should be: \n [getStatsBot league] to get the current top scorers of the season \n [getStatsBot league season] for a specific season."
+    failed_reply_text = "{} Your request could not be completed. \n Format should be: \n [getStatsBot league] to get the current top scorers of the season \n [getStatsBot league season] for a specific season."
     try:
         league, season = findLeagueAndSeason(tweet_text)
         if league is None:
@@ -150,14 +150,15 @@ def send_reply(tweet_text, tweet_id):
             print(failed_reply_text)
             bot_api.update_status(
                 failed_reply_text,
-                in_reply_to_status_id=tweet_id)
+                in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
             putLastID(tweet_id)
         else:
             reply_text = getStatsFromApi(league, season)
             print(reply_text)
             bot_api.update_status(status=reply_text,
-                                  in_reply_to_status_id=tweet_id)
+                                  in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
             putLastID(tweet_id)
+            time.sleep(5)
     except Exception as e:
         print(e)
 
@@ -189,12 +190,15 @@ def respondToTweet():
     last_id = getLastID()
     # print(last_id)
     mentions = bot_api.mentions_timeline(since_id=last_id)
-    print(mentions)
     if len(mentions) == 0:
         print('None found')
+        time.sleep(10)
         return
     new_id = 0
     for mention in reversed(mentions):
+        print('-----------------------------')
+        print(mention)
+        author = mention.author.screen_name
         new_id = mention.id
         tweet_id = mention.id
         tweet_text = mention.text.lower()
@@ -216,7 +220,7 @@ def start_stream():
         print(previousRules)
         rule = tweepy.StreamRule(value="@getStatsBot")
         stream.add_rules(rule)
-        stream.filter(tweet_fields=["id", "text"])
+        stream.filter(tweet_fields=["id", "text"], user_fields=["username"])
 
 
 def start_response():
@@ -228,3 +232,4 @@ bot_client, bot_auth, bot_api = getAuthForBot()
 
 if __name__ == "__main__":
     start_stream()
+    # start_response()
