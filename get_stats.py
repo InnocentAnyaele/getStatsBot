@@ -17,7 +17,7 @@ ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 ACCESS_TOKEN2 = os.getenv('ACCESS_TOKEN2')
 ACCESS_TOKEN_SECRET2 = os.getenv('ACCESS_TOKEN_SECRET2')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
-STATS_KEY_API=os.getenv('STATS_API_KEY')
+STATS_KEY_API = os.getenv('STATS_API_KEY')
 
 
 def getAuthForDeveloperAccount():
@@ -101,7 +101,7 @@ def getStatsFromApi(league, season):
     querystring = {"league": league_id, "season": season}
 
     headers = {
-        "X-RapidAPI-Key": "2202bb1fd1mshe308a9467ccd12ep1732fajsn60bb4bb4d35e",
+        "X-RapidAPI-Key": STATS_KEY_API,
         "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
     }
 
