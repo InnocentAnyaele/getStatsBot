@@ -17,6 +17,7 @@ ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
 ACCESS_TOKEN2 = os.getenv('ACCESS_TOKEN2')
 ACCESS_TOKEN_SECRET2 = os.getenv('ACCESS_TOKEN_SECRET2')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
+STATS_KEY_API=os.getenv('STATS_API_KEY')
 
 
 def getAuthForDeveloperAccount():
@@ -158,7 +159,7 @@ def send_reply(tweet_text, tweet_id):
             bot_api.update_status(status=reply_text,
                                   in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
             putLastID(tweet_id)
-            time.sleep(5)
+            time.sleep(10)
     except Exception as e:
         print(e)
 
@@ -209,6 +210,7 @@ def respondToTweet():
         if mentioned_tweet > -1:
             print('yes, it includes it')
             send_reply(tweet_text, tweet_id)
+        time.sleep(10)
     putLastID(new_id)
 
 
@@ -220,7 +222,7 @@ def start_stream():
         print(previousRules)
         rule = tweepy.StreamRule(value="@getStatsBot")
         stream.add_rules(rule)
-        stream.filter(tweet_fields=["id", "text"], user_fields=["username"])
+        stream.filter(backfill_minutes=5, tweet_fields=["id", "text"])
 
 
 def start_response():
