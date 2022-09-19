@@ -116,6 +116,9 @@ def getStatsFromApi(league, season):
     response_data = json.loads(response.text)
     response_header = response.headers
 
+    print(response_remaining)
+    print(response_limit)
+
     result_length = response_data['results']
 
     if result_length > 0:
@@ -161,6 +164,12 @@ def send_reply(tweet_text, tweet_id):
             putLastID(tweet_id)
     except Exception as e:
         print(e)
+
+
+def maintenance(tweet_id):
+    reply = f"Hello, I am currently under maintenance and will be back shortly. Sorry for the inconvenience."
+    bot_api.update_status(status=reply,
+                          in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
 
 
 class CustomStreamListener(tweepy.StreamingClient):
@@ -233,5 +242,6 @@ def start_response():
 bot_client, bot_auth, bot_api = getAuthForBot()
 
 if __name__ == "__main__":
+    # getStatsFromApi("epl", 2022)
     start_stream()
     # start_response()
