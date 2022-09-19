@@ -159,7 +159,6 @@ def send_reply(tweet_text, tweet_id):
             bot_api.update_status(status=reply_text,
                                   in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
             putLastID(tweet_id)
-            time.sleep(10)
     except Exception as e:
         print(e)
 
@@ -175,6 +174,7 @@ class CustomStreamListener(tweepy.StreamingClient):
         mentioned_tweet = tweet_text.find("@getstatsbot")
         if mentioned_tweet > -1:
             send_reply(tweet_text, tweet_id)
+        time.sleep(5)
 
     def on_connect(self):
         print("Connected and listening")
@@ -210,7 +210,7 @@ def respondToTweet():
         if mentioned_tweet > -1:
             print('yes, it includes it')
             send_reply(tweet_text, tweet_id)
-        time.sleep(10)
+        time.sleep(5)
     putLastID(new_id)
 
 
