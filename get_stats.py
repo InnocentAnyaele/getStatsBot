@@ -142,7 +142,7 @@ def getStatsFromApi(league, season):
 
 
 def send_reply(tweet_text, tweet_id):
-    failed_reply_text = "{} Your request could not be completed. \n Format should be: \n [getStatsBot league] to get the current top scorers of the season \n [getStatsBot league season] for a specific season."
+    failed_reply_text = "Your request could not be completed. \n Format should be: \n [getStatsBot league] to get the current top scorers of the season \n [getStatsBot league season] for a specific season."
     try:
         league, season = findLeagueAndSeason(tweet_text)
         if league is None:
