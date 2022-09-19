@@ -216,13 +216,13 @@ def respondToTweet():
 
 def start_stream():
     while True:
-        stream = CustomStreamListener(BEARER_TOKEN)
+        stream = CustomStreamListener(BEARER_TOKEN, wait_on_rate_limit=True)
         previousRules = stream.get_rules().data
         stream.delete_rules(previousRules)
         print(previousRules)
         rule = tweepy.StreamRule(value="@getStatsBot")
         stream.add_rules(rule)
-        stream.filter(backfill_minutes=5, tweet_fields=["id", "text"])
+        stream.filter(tweet_fields=["id", "text"])
 
 
 def start_response():
