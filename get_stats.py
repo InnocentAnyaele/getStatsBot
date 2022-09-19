@@ -5,29 +5,37 @@ import datetime
 import json
 import time
 import leagues
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
+
+CONSUMER_API_KEY = os.getenv('CONSUMER_API_KEY')
+CONSUMER_API_KEY_SECRET = os.getenv('CONSUMER_API_KEY_SECRET')
+ACCESS_TOKEN = os.getenv('ACCESS_TOKEN')
+ACCESS_TOKEN_SECRET = os.getenv('ACCESS_TOKEN_SECRET')
+ACCESS_TOKEN2 = os.getenv('ACCESS_TOKEN2')
+ACCESS_TOKEN_SECRET2 = os.getenv('ACCESS_TOKEN_SECRET2')
+BEARER_TOKEN = os.getenv('BEARER_TOKEN')
 
 def getAuthForDeveloperAccount():
-    dev_auth = tweepy.OAuthHandler(keys.CONSUMER_API_KEY, keys.CONSUMER_API_KEY_SECRET)
-    dev_auth.set_access_token(keys.ACCESS_TOKEN, keys.ACCESS_TOKEN_SECRET)
+    dev_auth = tweepy.OAuthHandler(CONSUMER_API_KEY, CONSUMER_API_KEY_SECRET)
+    dev_auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
     dev_api = tweepy.API(dev_auth, wait_on_rate_limit=True)
     return dev_api
 
 
 def getAuthForBot():
-    bot_client = tweepy.Client(keys.BEARER_TOKEN, keys.CONSUMER_API_KEY, keys.CONSUMER_API_KEY_SECRET,
-                               keys.ACCESS_TOKEN2, keys.ACCESS_TOKEN_SECRET2)
-    bot_auth = tweepy.OAuthHandler(keys.CONSUMER_API_KEY, keys.CONSUMER_API_KEY_SECRET)
-    bot_auth.set_access_token(keys.ACCESS_TOKEN2, keys.ACCESS_TOKEN_SECRET2)
+    bot_client = tweepy.Client(BEARER_TOKEN, CONSUMER_API_KEY, CONSUMER_API_KEY_SECRET,
+                               ACCESS_TOKEN2, ACCESS_TOKEN_SECRET2)
+    bot_auth = tweepy.OAuthHandler(CONSUMER_API_KEY, CONSUMER_API_KEY_SECRET)
+    bot_auth.set_access_token(ACCESS_TOKEN2, ACCESS_TOKEN_SECRET2)
     bot_api = tweepy.API(bot_auth, wait_on_rate_limit=True)
     return (bot_client, bot_auth, bot_api)
 
 
-bot_client, bot_auth, bot_api = getAuthForBot()
-
-
 def getAccessTokenForBotAccount():
-    auth = tweepy.OAuthHandler(keys.CONSUMER_API_KEY, keys.CONSUMER_API_KEY_SECRET, callback='oob')
+    auth = tweepy.OAuthHandler(CONSUMER_API_KEY, CONSUMER_API_KEY_SECRET, callback='oob')
     auth.secure = True
     auth_url = auth.get_authorization_url()
     print('Please authorize: ' + auth_url)
@@ -52,7 +60,7 @@ def verifyBotCredentials(bot_api):
 def getLastID():
     f = open('tweet_ID.txt', 'r')
     lastId = int(f.read().strip())
-    print(lastId)
+    return lastId
 
 
 def putLastID(Id):
@@ -80,9 +88,6 @@ def findLeagueAndSeason(text):
         return text_array[0], current_season
     else:
         return text_array[0], text_array[1]
-
-
-# findLeagueAndSeason("@getstatsbot Premier-League")
 
 
 def getStatsFromApi(league, season):
@@ -127,34 +132,60 @@ def getStatsFromApi(league, season):
         statusFound = None
 
     if statusFound is None:
-        reply_text = "Your request could not be completed. \n Format should be: \n [getStatsBot league] to get the current season top scorers of the season \n [getStatsBot league season] for a specific season."
+        reply_text = "Your request could not be completed. \n Format should be: \n [getStatsBot league] to get the current top scorers of the season \n [getStatsBot league season] for a specific season."
 
     # print(statusFound)
     # print(response_data)
     return reply_text
 
 
-class CustomStreamListener(tweepy.StreamingClient):
-
-    def on_tweet(self, tweet):
-        tweet_id = tweet.id
-        tweet_text = tweet.text
-        failed_reply_text = "Your request could not be completed. \n Format should be: \n [getStatsBot league] to get the current season top scorers of the season \n [getStatsBot league season] for a specific season."
-
+def send_reply(tweet_text, tweet_id):
+    failed_reply_text = "Your request could not be completed. \n Format should be: \n [getStatsBot league] to get the current top scorers of the season \n [getStatsBot league season] for a specific season."
+    try:
         league, season = findLeagueAndSeason(tweet_text)
-
         if league is None:
-            print('reached here')
-            print('this means the problem is with the stream')
+            # print('reached here')
+            # print('this means the problem is with the stream')
             print(failed_reply_text)
             bot_api.update_status(
                 failed_reply_text,
                 in_reply_to_status_id=tweet_id)
+            putLastID(tweet_id)
         else:
             reply_text = getStatsFromApi(league, season)
             print(reply_text)
             bot_api.update_status(status=reply_text,
                                   in_reply_to_status_id=tweet_id)
+            putLastID(tweet_id)
+    except Exception as e:
+        print(e)
+
+class CustomStreamListener(tweepy.StreamingClient):
+
+    def on_tweet(self, tweet):
+        print('new tweet intake')
+        tweet_id = tweet.id
+        tweet_text = tweet.text
+        tweet_text = tweet_text.lower()
+        lastId = getLastID()
+        mentioned_tweet = tweet_text.find("@getstatsbot")
+        if mentioned_tweet > -1:
+            send_reply(tweet_text, tweet_id)
+            # league, season = findLeagueAndSeason(tweet_text)
+            # if league is None:
+            #     # print('reached here')
+            #     # print('this means the problem is with the stream')
+            #     print(failed_reply_text)
+            #     bot_api.update_status(
+            #         failed_reply_text,
+            #         in_reply_to_status_id=tweet_id)
+            #     putLastID(tweet_id)
+            # else:
+            #     reply_text = getStatsFromApi(league, season)
+            #     print(reply_text)
+            #     bot_api.update_status(status=reply_text,
+            #                           in_reply_to_status_id=tweet_id)
+            #     putLastID(tweet_id)
 
 
 
@@ -171,10 +202,46 @@ class CustomStreamListener(tweepy.StreamingClient):
             return False
 
 
-if __name__ == "__main__":
-    stream = CustomStreamListener(keys.BEARER_TOKEN)
-    rule = tweepy.StreamRule(value="@getStatsBot")
-    stream.add_rules(rule)
-    stream.filter(tweet_fields=["id", "text", "in_reply_to_user_id"])
-    # putLastID('1223')
-    # getLastID()
+def respondToTweet():
+    last_id = getLastID()
+    # print(last_id)
+    mentions = bot_api.mentions_timeline(since_id = last_id)
+    print (mentions)
+    if len(mentions) == 0:
+        print ('None found')
+        return
+    new_id = 0
+    for mention in reversed(mentions):
+        new_id = mention.id
+        tweet_id = mention.id
+        tweet_text = mention.text.lower()
+        print (tweet_id)
+        print (tweet_text)
+        mentioned_tweet = tweet_text.find("@getstatsbot")
+        print (mentioned_tweet)
+        if mentioned_tweet > -1:
+            print('yes, it includes it')
+            send_reply(tweet_text, tweet_id)
+    putLastID(new_id)
+
+
+
+# if __name__ == "__main__":
+
+bot_client, bot_auth, bot_api = getAuthForBot()
+
+respondToTweet()
+
+#     stream = CustomStreamListener(BEARER_TOKEN)
+#     previousRules = stream.get_rules().data
+#     stream.delete_rules(previousRules)
+#     print(previousRules)
+#     rule = tweepy.StreamRule(value="@getStatsBot")
+#     stream.add_rules(rule)
+#     stream.filter(tweet_fields=["id", "text"])
+
+# findLeagueAndSeason("@getstatsbot Premier-League")
+
+
+
+
