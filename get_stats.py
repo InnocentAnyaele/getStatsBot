@@ -19,6 +19,8 @@ ACCESS_TOKEN_SECRET2 = os.getenv('ACCESS_TOKEN_SECRET2')
 BEARER_TOKEN = os.getenv('BEARER_TOKEN')
 STATS_KEY_API = os.getenv('STATS_API_KEY')
 
+BOT_ID = '1571025853701656576'
+
 
 def getAuthForDeveloperAccount():
     dev_auth = tweepy.OAuthHandler(CONSUMER_API_KEY, CONSUMER_API_KEY_SECRET)
@@ -74,16 +76,14 @@ def putLastID(Id):
 
 def findLeagueAndSeason(text):
     current_season = datetime.date.today().year
-    print(current_season)
-    text_array = text.split(' ')
+    arr = text.split(' ')
+    text_array = []
+    for i in arr:
+        if i.lower() != '@getstatsbot':
+            text_array.append(i.lower())
     league = ''
     season = ''
-    print(text_array)
     playerName = ''
-    for i in range(len(text_array)):
-        if text_array[i].lower() == '@getstatsbot':
-            text_array = text_array[i + 1:]
-            break
     if len(text_array) < 1:
         return None, None
     if len(text_array) == 1:
@@ -172,6 +172,26 @@ def maintenance(tweet_id):
                           in_reply_to_status_id=tweet_id, auto_populate_reply_metadata=True)
 
 
+def checkMentionCount(text):
+    textArray = text.split(' ')
+    mention_count = 0
+    for t in textArray:
+        if t.lower() == '@getstatsbot':
+            mention_count += 1
+    return mention_count
+
+
+# def checkIfTweetIsAReply(in_reply_to_user_id, text):
+#     mention_count = checkMentionCount(text)
+#     replyToBot = False
+#     replyToOther = False
+#     if str(in_reply_to_user_id) == BOT_ID:
+#         replyToBot = True
+#     elif in_reply_to_user_id is not None:
+#         replyToOther = True
+#     return replyToBot, replyToOther, mention_count
+
+
 class CustomStreamListener(tweepy.StreamingClient):
 
     def on_tweet(self, tweet):
@@ -179,6 +199,8 @@ class CustomStreamListener(tweepy.StreamingClient):
         tweet_id = tweet.id
         tweet_text = tweet.text
         tweet_text = tweet_text.lower()
+        in_reply_to_user_id = tweet.in_reply_to_user_id
+        print(in_reply_to_user_id)
         lastId = getLastID()
         mentioned_tweet = tweet_text.find("@getstatsbot")
         if mentioned_tweet > -1:
@@ -231,7 +253,7 @@ def start_stream():
         print(previousRules)
         rule = tweepy.StreamRule(value="@getStatsBot")
         stream.add_rules(rule)
-        stream.filter(tweet_fields=["id", "text"])
+        stream.filter(tweet_fields=["id", "text", "in_reply_to_user_id"])
 
 
 def start_response():
@@ -241,7 +263,14 @@ def start_response():
 
 bot_client, bot_auth, bot_api = getAuthForBot()
 
+
+def getBotID():
+    user = bot_api.get_user(screen_name='getStatsBot')
+    return user.id_str
+
+
 if __name__ == "__main__":
     # getStatsFromApi("epl", 2022)
+    # checkMentionCount('@getStatsBot sfsd @getStatsbot')
     start_stream()
     # start_response()
